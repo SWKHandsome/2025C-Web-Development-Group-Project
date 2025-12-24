@@ -1,0 +1,6 @@
+uploads/packages/*
+!uploads/packages/.gitkeep
+uploads/lost-and-found/*
+!uploads/lost-and-found/.gitkeep
+.idea/
+*.log
