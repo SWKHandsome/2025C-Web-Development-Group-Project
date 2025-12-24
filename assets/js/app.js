@@ -23,4 +23,47 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    const formatDatePreview = (date) => (
+        date.toLocaleString('en-MY', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        })
+    );
+
+    document.querySelectorAll('[data-offset-months]').forEach((input) => {
+        const targetSelector = input.getAttribute('data-offset-target');
+        if (!targetSelector) {
+            return;
+        }
+        const target = document.querySelector(targetSelector);
+        if (!target) {
+            return;
+        }
+        const defaultText = target.dataset.defaultText || target.textContent;
+        const months = Number(input.getAttribute('data-offset-months')) || 0;
+
+        const updatePreview = () => {
+            const value = input.value;
+            if (!value) {
+                target.textContent = defaultText;
+                return;
+            }
+            const baseDate = new Date(value);
+            if (Number.isNaN(baseDate.getTime())) {
+                target.textContent = defaultText;
+                return;
+            }
+            const future = new Date(baseDate.getTime());
+            future.setMonth(future.getMonth() + months);
+            target.textContent = formatDatePreview(future);
+        };
+
+        updatePreview();
+        input.addEventListener('input', updatePreview);
+        input.addEventListener('change', updatePreview);
+    });
 });

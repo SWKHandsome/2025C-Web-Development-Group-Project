@@ -32,23 +32,38 @@ include base_path('partials/layout-top.php');
             <thead>
             <tr>
                 <th>Courier</th>
-                <th>Tracking</th>
+                <th>Tracking no.</th>
+                <th>Student</th>
+                <th>Arrival</th>
                 <th>Collected on</th>
-                <th>Handled by</th>
-                <th>Notes</th>
+                <th>Status</th>
             </tr>
             </thead>
             <tbody>
             <?php if (!$history): ?>
-                <tr><td colspan="5" class="empty">No collection history available.</td></tr>
+                <tr>
+                    <td colspan="6" class="empty">No collection history available.</td>
+                </tr>
             <?php endif; ?>
             <?php foreach ($history as $parcel): ?>
                 <tr>
-                    <td><?= e($parcel['courier']); ?></td>
-                    <td><?= e($parcel['tracking_number']); ?></td>
+                    <td>
+                        <div class="courier">
+                            <img src="<?= courier_logo($parcel['courier']); ?>" alt="<?= e($parcel['courier']); ?> logo">
+                            <span><?= e($parcel['courier']); ?></span>
+                        </div>
+                    </td>
+                    <td>
+                        <strong><?= e($parcel['tracking_number']); ?></strong>
+                        <p class="muted">Ref: <?= e($parcel['parcel_code'] ?? '—'); ?></p>
+                    </td>
+                    <td>
+                        <strong><?= e($student['full_name']); ?></strong>
+                        <p class="muted">ID: <?= e($student['student_id'] ?? '—'); ?></p>
+                    </td>
+                    <td><?= format_datetime($parcel['arrival_at']); ?></td>
                     <td><?= format_datetime($parcel['collected_at']); ?></td>
-                    <td><?= e($parcel['recorder_name'] ?? 'Admin'); ?></td>
-                    <td><?= e($parcel['notes'] ?? '—'); ?></td>
+                    <td><?= status_badge($parcel['status']); ?></td>
                 </tr>
             <?php endforeach; ?>
             </tbody>

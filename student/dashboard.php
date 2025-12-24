@@ -5,51 +5,48 @@ declare(strict_types=1);
 require_once __DIR__ . '/../bootstrap.php';
 require_role($pdo, 'student');
 
-$pageTitle = 'My Parcels';
+$pageTitle = 'Parcels';
 $activeNav = 'student-dashboard';
 $student = current_user($pdo);
 
-$packageQuery = $pdo->prepare(
-    'SELECT p.*, recorder.full_name AS recorder_name FROM packages p
-     LEFT JOIN users recorder ON recorder.id = p.recorded_by
-     WHERE p.student_id = :student
-     ORDER BY p.arrival_at DESC'
-);
-$packageQuery->execute(['student' => $student['id']]);
-$packages = $packageQuery->fetchAll();
+$searchTerm = trim($_GET['q'] ?? '');
 
-$pending = array_filter($packages, fn($parcel) => $parcel['status'] === 'pending');
-$expiringSoon = array_filter(
-    $pending,
-    fn($parcel) => ($days = days_until($parcel['deadline_at'])) !== null && $days >= 0 && $days <= 7
-);
+$sql = 'SELECT p.*, recipient.full_name AS student_name, recipient.student_id AS student_code,
+               recorder.full_name AS recorder_name
+        FROM packages p
+        LEFT JOIN users recorder ON recorder.id = p.recorded_by
+        LEFT JOIN users recipient ON recipient.id = p.student_id';
+
+$params = [];
+
+if ($searchTerm !== '') {
+    $sql .= ' WHERE p.tracking_number LIKE :term OR p.recipient_name LIKE :term OR recipient.full_name LIKE :term';
+    $params['term'] = '%' . $searchTerm . '%';
+}
+
+$sql .= ' ORDER BY p.arrival_at DESC';
+
+$packageQuery = $pdo->prepare($sql);
+$packageQuery->execute($params);
+$packages = $packageQuery->fetchAll();
 
 include base_path('partials/layout-top.php');
 ?>
-<section class="grid stats-grid">
-    <article class="stat-card">
-        <p>Total parcels</p>
-        <h2><?= count($packages); ?></h2>
-        <small>Across the last 6 months</small>
-    </article>
-    <article class="stat-card">
-        <p>Waiting pickup</p>
-        <h2><?= count($pending); ?></h2>
-        <small>Remember to collect within 6 months</small>
-    </article>
-    <article class="stat-card warning">
-        <p>Expiring soon</p>
-        <h2><?= count($expiringSoon); ?></h2>
-        <small>7-day reminder window</small>
-    </article>
-</section>
-
 <section class="card">
     <header class="card-header">
         <div>
             <h3>Parcel list</h3>
-            <p class="muted">Track arrivals, couriers, and deadlines.</p>
+            <?php if ($searchTerm !== ''): ?>
+                <p class="muted">Showing results for "<?= e($searchTerm); ?>"</p>
+            <?php endif; ?>
         </div>
+        <form class="search-form" method="get">
+            <input type="text" name="q" placeholder="Search by tracking no. or name" value="<?= e($searchTerm); ?>">
+            <?php if ($searchTerm !== ''): ?>
+                <a class="button button-light" href="<?= base_url('student/dashboard.php'); ?>">Clear</a>
+            <?php endif; ?>
+            <button type="submit" class="button button-primary">Search</button>
+        </form>
     </header>
     <div class="table-wrapper">
         <table>
@@ -66,7 +63,9 @@ include base_path('partials/layout-top.php');
             <tbody>
             <?php if (!$packages): ?>
                 <tr>
-                    <td colspan="6" class="empty">No parcels yet.</td>
+                    <td colspan="6" class="empty">
+                        <?= $searchTerm === '' ? 'No parcels yet.' : 'No parcels match your search.'; ?>
+                    </td>
                 </tr>
             <?php endif; ?>
             <?php foreach ($packages as $parcel): ?>
@@ -82,8 +81,8 @@ include base_path('partials/layout-top.php');
                         <p class="muted">Ref: <?= e($parcel['parcel_code'] ?? '—'); ?></p>
                     </td>
                     <td>
-                        <strong><?= e($parcel['recipient_name']); ?></strong>
-                        <p class="muted">ID: <?= e($student['student_id'] ?? '—'); ?></p>
+                        <strong><?= e($parcel['student_name'] ?? $parcel['recipient_name']); ?></strong>
+                        <p class="muted">ID: <?= e($parcel['student_code'] ?? '—'); ?></p>
                     </td>
                     <td><?= format_datetime($parcel['arrival_at']); ?></td>
                     <td>

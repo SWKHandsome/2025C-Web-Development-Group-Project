@@ -78,7 +78,7 @@ if (is_post()) {
             $recipientName = trim($_POST['recipient_name'] ?? '');
             $tracking = trim($_POST['tracking_number'] ?? '');
             $arrival = to_mysql_datetime($_POST['arrival_at'] ?? '') ?? date('Y-m-d H:i:s');
-            $deadline = to_mysql_datetime($_POST['deadline_at'] ?? '') ?? date('Y-m-d H:i:s', strtotime($arrival . ' +6 months'));
+            $deadline = date('Y-m-d H:i:s', strtotime($arrival . ' +6 months'));
 
             if ($recipientName === '' || $tracking === '') {
                 $formErrors[] = 'Recipient name and tracking number are required.';
@@ -105,7 +105,7 @@ if (is_post()) {
                     $stmt->execute($payload);
                     flash('success', 'Package recorded successfully.');
                 } else {
-                    $payload['id'] = (int) ($_POST['package_id'] ?? 0);
+                        $payload['id'] = (int) ($_POST['package_id'] ?? 0);
                     $sql = 'UPDATE packages SET student_id = :student_id, recipient_name = :recipient_name, tracking_number = :tracking_number,
                             parcel_code = :parcel_code, courier = :courier, arrival_at = :arrival_at, deadline_at = :deadline_at,
                             shelf_code = :shelf_code, notes = :notes WHERE id = :id';
@@ -183,17 +183,19 @@ include base_path('partials/layout-top.php');
             <label>Arrival time
                 <?php
                 $arrivalRaw = $oldValue('arrival_at');
-                $arrivalValue = $arrivalRaw ? (str_contains($arrivalRaw, 'T') ? $arrivalRaw : date('Y-m-d\TH:i', strtotime($arrivalRaw))) : '';
+                $arrivalValue = $arrivalRaw
+                    ? (str_contains($arrivalRaw, 'T') ? $arrivalRaw : date('Y-m-d\TH:i', strtotime($arrivalRaw)))
+                    : date('Y-m-d\TH:i');
                 ?>
-                <input type="datetime-local" name="arrival_at" value="<?= e($arrivalValue); ?>">
+                <input type="datetime-local" name="arrival_at" value="<?= e($arrivalValue); ?>" data-offset-months="6" data-offset-target="#package-deadline-preview">
             </label>
-            <label>Deadline
-                <?php
-                $deadlineRaw = $oldValue('deadline_at');
-                $deadlineValue = $deadlineRaw ? (str_contains($deadlineRaw, 'T') ? $deadlineRaw : date('Y-m-d\TH:i', strtotime($deadlineRaw))) : '';
-                ?>
-                <input type="datetime-local" name="deadline_at" value="<?= e($deadlineValue); ?>">
-            </label>
+            <?php
+            $existingDeadline = $editPackage['deadline_at'] ?? null;
+            $deadlinePreview = $existingDeadline ? format_datetime($existingDeadline) : 'Auto set 6 months after arrival time';
+            ?>
+            <p class="auto-hint">
+                Deadline auto-set to <span id="package-deadline-preview" data-default-text="<?= e($deadlinePreview); ?>"><?= e($deadlinePreview); ?></span>
+            </p>
             <label>Shelf / zone
                 <input type="text" name="shelf_code" value="<?= e($oldValue('shelf_code')); ?>" placeholder="e.g. Locker B-12">
             </label>

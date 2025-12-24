@@ -58,9 +58,17 @@ if (is_post()) {
             <h1>Campus Parcel</h1>
             <p>Parcel tracking &amp; lost item recovery for campus residents.</p>
         </div>
+        <?php $selectedRole = $_POST['role'] ?? 'student'; ?>
         <form method="post" class="auth-form">
             <input type="hidden" name="csrf_token" value="<?= csrf_token(); ?>">
+            <input type="hidden" name="role" id="roleInput" value="<?= e($selectedRole); ?>">
             <h2>Login</h2>
+            <div class="role-card">
+                <div class="role-select" data-role-select>
+                    <button type="button" class="role-option <?= $selectedRole === 'student' ? 'is-selected' : ''; ?>" data-value="student">Student</button>
+                    <button type="button" class="role-option <?= $selectedRole === 'admin' ? 'is-selected' : ''; ?>" data-value="admin">Administrator</button>
+                </div>
+            </div>
             <?php if ($errors): ?>
                 <div class="alert alert-error">
                     <ul>
@@ -82,13 +90,28 @@ if (is_post()) {
             <label>Password
                 <input type="password" name="password" placeholder="Your password" required>
             </label>
-            <label>Login as</label>
-            <div class="role-select">
-                <label><input type="radio" name="role" value="student" <?= (($_POST['role'] ?? 'student') === 'student') ? 'checked' : ''; ?>> Student</label>
-                <label><input type="radio" name="role" value="admin" <?= (($_POST['role'] ?? '') === 'admin') ? 'checked' : ''; ?>> Administrator</label>
-            </div>
             <button type="submit" class="button button-primary">Sign in</button>
         </form>
     </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const select = document.querySelector('[data-role-select]');
+        const input = document.getElementById('roleInput');
+        if (!select || !input) {
+            return;
+        }
+
+        select.addEventListener('click', function (event) {
+            const button = event.target.closest('.role-option');
+            if (!button) {
+                return;
+            }
+            input.value = button.dataset.value;
+            select.querySelectorAll('.role-option').forEach(function (option) {
+                option.classList.toggle('is-selected', option === button);
+            });
+        });
+    });
+    </script>
 </body>
 </html>

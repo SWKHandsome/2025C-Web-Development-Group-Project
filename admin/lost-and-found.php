@@ -39,7 +39,7 @@ if (is_post()) {
             $itemName = trim($_POST['item_name'] ?? '');
             $foundLocation = trim($_POST['found_location'] ?? '');
             $foundAt = to_mysql_datetime($_POST['found_at'] ?? '') ?? date('Y-m-d H:i:s');
-            $expiryAt = to_mysql_datetime($_POST['expiry_at'] ?? '') ?? date('Y-m-d H:i:s', strtotime('+3 months'));
+            $expiryAt = date('Y-m-d H:i:s', strtotime($foundAt . ' +6 months'));
             $description = trim($_POST['description'] ?? '');
             $storage = trim($_POST['storage_location'] ?? '');
 
@@ -167,17 +167,19 @@ include base_path('partials/layout-top.php');
             <label>Found at
                 <?php
                 $foundRaw = $oldLostValue('found_at');
-                $foundValue = $foundRaw ? (str_contains($foundRaw, 'T') ? $foundRaw : date('Y-m-d\TH:i', strtotime($foundRaw))) : '';
+                $foundValue = $foundRaw
+                    ? (str_contains($foundRaw, 'T') ? $foundRaw : date('Y-m-d\TH:i', strtotime($foundRaw)))
+                    : date('Y-m-d\TH:i');
                 ?>
-                <input type="datetime-local" name="found_at" value="<?= e($foundValue); ?>">
+                <input type="datetime-local" name="found_at" value="<?= e($foundValue); ?>" data-offset-months="6" data-offset-target="#lost-expiry-preview">
             </label>
-            <label>Expiry
-                <?php
-                $expiryRaw = $oldLostValue('expiry_at');
-                $expiryValue = $expiryRaw ? (str_contains($expiryRaw, 'T') ? $expiryRaw : date('Y-m-d\TH:i', strtotime($expiryRaw))) : '';
-                ?>
-                <input type="datetime-local" name="expiry_at" value="<?= e($expiryValue); ?>">
-            </label>
+            <?php
+            $existingExpiry = $editItem['expiry_at'] ?? null;
+            $expiryPreview = $existingExpiry ? format_datetime($existingExpiry) : 'Auto set 6 months after found time';
+            ?>
+            <p class="auto-hint">
+                Item expiry auto-set to <span id="lost-expiry-preview" data-default-text="<?= e($expiryPreview); ?>"><?= e($expiryPreview); ?></span>
+            </p>
             <label>Photo
                 <input type="file" name="photo" accept="image/*">
             </label>
