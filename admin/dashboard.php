@@ -9,7 +9,6 @@ $pageTitle = 'Control Center';
 $activeNav = 'admin-dashboard';
 
 $stats = [
-    'totalPackages' => (int) $pdo->query('SELECT COUNT(*) FROM packages')->fetchColumn(),
     'pendingPackages' => (int) $pdo->query('SELECT COUNT(*) FROM packages WHERE status = "pending"')->fetchColumn(),
     'expiringPackages' => (int) $pdo->query('SELECT COUNT(*) FROM packages WHERE status = "pending" AND deadline_at <= DATE_ADD(NOW(), INTERVAL 7 DAY)')->fetchColumn(),
     'lostPending' => (int) $pdo->query('SELECT COUNT(*) FROM lost_items WHERE status = "pending"')->fetchColumn(),
@@ -30,11 +29,6 @@ include base_path('partials/layout-top.php');
 ?>
 <section class="grid stats-grid">
     <article class="stat-card">
-        <p>Total parcels</p>
-        <h2><?= $stats['totalPackages']; ?></h2>
-        <small>Recorded items overall</small>
-    </article>
-    <article class="stat-card">
         <p>Pending pickup</p>
         <h2><?= $stats['pendingPackages']; ?></h2>
         <small>Awaiting students</small>
@@ -51,33 +45,53 @@ include base_path('partials/layout-top.php');
     </article>
 </section>
 
-<div class="grid two-columns">
-    <section class="card">
+<div class="grid two-columns dashboard-columns">
+    <section class="card card-tall">
         <header class="card-header">
             <div>
                 <h3>Recent parcels</h3>
                 <p class="muted">Latest five entries.</p>
             </div>
         </header>
-        <ul class="timeline">
-            <?php if (!$latestParcels): ?>
-                <li class="empty">No parcels yet.</li>
-            <?php endif; ?>
-            <?php foreach ($latestParcels as $parcel): ?>
-                <li>
-                    <div class="timeline-icon">
-                        <img src="<?= courier_logo($parcel['courier']); ?>" alt="<?= e($parcel['courier']); ?>">
-                    </div>
-                    <div>
-                        <strong><?= e($parcel['tracking_number']); ?></strong>
-                        <p><?= e($parcel['student_name'] ?? 'Student'); ?> • <?= format_datetime($parcel['arrival_at']); ?></p>
-                    </div>
-                    <?= status_badge($parcel['status']); ?>
-                </li>
-            <?php endforeach; ?>
-        </ul>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                <tr>
+                    <th>Courier</th>
+                    <th>Tracking no.</th>
+                    <th>Student</th>
+                    <th>Arrival</th>
+                    <th>Status</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php if (!$latestParcels): ?>
+                    <tr>
+                        <td colspan="5" class="empty">No parcels yet.</td>
+                    </tr>
+                <?php endif; ?>
+                <?php foreach ($latestParcels as $parcel): ?>
+                    <tr>
+                        <td>
+                            <div class="courier">
+                                <img src="<?= courier_logo($parcel['courier']); ?>" alt="<?= e($parcel['courier']); ?> logo">
+                                <span><?= e($parcel['courier']); ?></span>
+                            </div>
+                        </td>
+                        <td>
+                            <strong><?= e($parcel['tracking_number']); ?></strong>
+                            <p class="muted">Ref: <?= e($parcel['parcel_code'] ?? '—'); ?></p>
+                        </td>
+                        <td><?= e($parcel['student_name'] ?? 'Student'); ?></td>
+                        <td><?= format_datetime($parcel['arrival_at']); ?></td>
+                        <td><?= status_badge($parcel['status']); ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
     </section>
-    <section class="card">
+    <section class="card card-tall">
         <header class="card-header">
             <div>
                 <h3>Lost item snapshots</h3>

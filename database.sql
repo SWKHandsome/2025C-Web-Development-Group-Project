@@ -56,6 +56,8 @@ CREATE TABLE lost_items (
     storage_location VARCHAR(80) DEFAULT NULL,
     recorded_by INT NOT NULL,
     claimed_by INT DEFAULT NULL,
+    claimed_by_name VARCHAR(120) DEFAULT NULL,
+    claimed_by_student_id VARCHAR(30) DEFAULT NULL,
     claimed_at DATETIME DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

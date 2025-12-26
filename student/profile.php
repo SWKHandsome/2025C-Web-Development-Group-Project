@@ -16,18 +16,32 @@ if (is_post()) {
         $errors[] = 'Invalid security token.';
     }
 
+    $fullName = trim($_POST['full_name'] ?? '');
+    $studentId = trim($_POST['student_id'] ?? '');
+    $email = trim($_POST['email'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
     $faculty = trim($_POST['faculty'] ?? '');
     $password = $_POST['password'] ?? '';
 
+    if ($fullName === '') {
+        $errors[] = 'Name cannot be empty.';
+    }
+
+    if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors[] = 'Please provide a valid email address.';
+    }
+
     if (!$errors) {
         $fields = [
+            'full_name' => $fullName,
+            'student_id' => $studentId !== '' ? $studentId : null,
+            'email' => $email,
             'phone' => $phone,
             'faculty' => $faculty,
             'id' => $user['id'],
         ];
 
-        $sql = 'UPDATE users SET phone = :phone, faculty = :faculty';
+        $sql = 'UPDATE users SET full_name = :full_name, student_id = :student_id, email = :email, phone = :phone, faculty = :faculty';
 
         if ($password !== '') {
             if (strlen($password) < 6) {
@@ -52,6 +66,10 @@ $user = current_user($pdo);
 
 include base_path('partials/layout-top.php');
 ?>
+<?php
+$formVisible = !empty($errors);
+$old = static fn(string $key) => $_POST[$key] ?? ($user[$key] ?? '');
+?>
 <section class="card">
     <header class="card-header">
         <div>
@@ -60,12 +78,15 @@ include base_path('partials/layout-top.php');
         </div>
     </header>
     <div class="profile-grid">
-        <div>
+        <div class="profile-summary">
             <p><strong>Name:</strong> <?= e($user['full_name']); ?></p>
             <p><strong>Student ID:</strong> <?= e($user['student_id'] ?? '—'); ?></p>
             <p><strong>Email:</strong> <?= e($user['email']); ?></p>
+            <p><strong>Phone:</strong> <?= e($user['phone'] ?? 'Not provided'); ?></p>
+            <p><strong>Faculty:</strong> <?= e($user['faculty'] ?? 'Not provided'); ?></p>
+            <button type="button" class="button button-primary" id="profileEditButton" <?= $formVisible ? 'hidden' : ''; ?>>Edit profile</button>
         </div>
-        <form method="post">
+        <form method="post" id="profileForm" <?= $formVisible ? '' : 'hidden'; ?>>
             <input type="hidden" name="csrf_token" value="<?= csrf_token(); ?>">
             <?php if ($errors): ?>
                 <div class="alert alert-error">
@@ -76,11 +97,20 @@ include base_path('partials/layout-top.php');
                     </ul>
                 </div>
             <?php endif; ?>
+            <label>Full name
+                <input type="text" name="full_name" value="<?= e($old('full_name')); ?>" required>
+            </label>
+            <label>Student ID
+                <input type="text" name="student_id" value="<?= e($old('student_id')); ?>" placeholder="e.g. 21WMR12345">
+            </label>
+            <label>Email
+                <input type="email" name="email" value="<?= e($old('email')); ?>" required>
+            </label>
             <label>Phone number
-                <input type="text" name="phone" value="<?= e($user['phone'] ?? ''); ?>" placeholder="e.g. 012-1234567">
+                <input type="text" name="phone" value="<?= e($old('phone')); ?>" placeholder="e.g. 012-1234567">
             </label>
             <label>Faculty / School
-                <input type="text" name="faculty" value="<?= e($user['faculty'] ?? ''); ?>" placeholder="Faculty of Engineering">
+                <input type="text" name="faculty" value="<?= e($old('faculty')); ?>" placeholder="Faculty of Engineering">
             </label>
             <label>New password
                 <input type="password" name="password" placeholder="Leave blank to keep current password">

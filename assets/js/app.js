@@ -66,4 +66,18 @@ document.addEventListener('DOMContentLoaded', () => {
         input.addEventListener('input', updatePreview);
         input.addEventListener('change', updatePreview);
     });
+
+    const profileEditButton = document.getElementById('profileEditButton');
+    const profileForm = document.getElementById('profileForm');
+
+    if (profileEditButton && profileForm) {
+        profileEditButton.addEventListener('click', () => {
+            profileForm.hidden = false;
+            profileEditButton.hidden = true;
+            const firstField = profileForm.querySelector('input:not([type="hidden"])');
+            if (firstField) {
+                firstField.focus();
+            }
+        });
+    }
 });
