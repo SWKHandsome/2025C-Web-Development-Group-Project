@@ -24,7 +24,6 @@ CREATE TABLE users (
 
 CREATE TABLE packages (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    student_id INT NOT NULL,
     recipient_name VARCHAR(120) NOT NULL,
     tracking_number VARCHAR(80) NOT NULL,
     parcel_code VARCHAR(40) DEFAULT NULL,
@@ -40,7 +39,6 @@ CREATE TABLE packages (
     recorded_by INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_packages_student FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_packages_recorder FOREIGN KEY (recorded_by) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -71,11 +69,11 @@ VALUES
 ('student', 'S1234567', NULL, 'Jason Lim', 'jason@campus.local', '012-5558888', 'School of Business', NULL, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),
 ('student', 'S7654321', NULL, 'Emily Tan', 'emily@campus.local', '011-2233445', 'Faculty of Computing', NULL, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi');
 
-INSERT INTO packages (student_id, recipient_name, tracking_number, parcel_code, courier, arrival_at, deadline_at, status, shelf_code, notes, recorded_by)
+INSERT INTO packages (recipient_name, tracking_number, parcel_code, courier, arrival_at, deadline_at, status, shelf_code, notes, recorded_by)
 VALUES
-(2, 'Jason Lim', 'LM123MY908', 'PKG-221', 'Lalamove', NOW() - INTERVAL 1 DAY, NOW() + INTERVAL 29 DAY, 'pending', 'Rack B-10', 'Requires student card verification.', 1),
-(3, 'Emily Tan', 'SHOPEE77881', 'PKG-310', 'Shopee', NOW() - INTERVAL 4 DAY, NOW() + INTERVAL 24 DAY, 'pending', 'Locker C-04', 'Fragile electronics.', 1),
-(2, 'Jason Lim', 'LAZ221144', 'PKG-098', 'Lazada', NOW() - INTERVAL 50 DAY, NOW() - INTERVAL 10 DAY, 'collected', 'Rack A-02', 'Collected during counter session.', 1);
+('Jason Lim', 'LM123MY908', 'PKG-221', 'Lalamove', NOW() - INTERVAL 1 DAY, NOW() + INTERVAL 29 DAY, 'pending', 'Rack B-10', 'Requires student card verification.', 1),
+('Emily Tan', 'SHOPEE77881', 'PKG-310', 'Shopee', NOW() - INTERVAL 4 DAY, NOW() + INTERVAL 24 DAY, 'pending', 'Locker C-04', 'Fragile electronics.', 1),
+('Jason Lim', 'LAZ221144', 'PKG-098', 'Lazada', NOW() - INTERVAL 50 DAY, NOW() - INTERVAL 10 DAY, 'collected', 'Rack A-02', 'Collected during counter session.', 1);
 
 INSERT INTO lost_items (item_name, description, found_location, found_at, expiry_at, status, photo_path, storage_location, recorded_by)
 VALUES

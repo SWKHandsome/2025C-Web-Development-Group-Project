@@ -11,16 +11,14 @@ $student = current_user($pdo);
 
 $searchTerm = trim($_GET['q'] ?? '');
 
-$sql = 'SELECT p.*, recipient.full_name AS student_name, recipient.student_id AS student_code,
-               recorder.full_name AS recorder_name
-        FROM packages p
-        LEFT JOIN users recorder ON recorder.id = p.recorded_by
-        LEFT JOIN users recipient ON recipient.id = p.student_id';
+$sql = 'SELECT p.*, recorder.full_name AS recorder_name
+    FROM packages p
+    LEFT JOIN users recorder ON recorder.id = p.recorded_by';
 
 $params = [];
 
 if ($searchTerm !== '') {
-    $sql .= ' WHERE p.tracking_number LIKE :term OR p.recipient_name LIKE :term OR recipient.full_name LIKE :term';
+    $sql .= ' WHERE p.tracking_number LIKE :term OR p.recipient_name LIKE :term OR p.collected_by_name LIKE :term OR p.collected_by_student_id LIKE :term';
     $params['term'] = '%' . $searchTerm . '%';
 }
 
@@ -54,7 +52,7 @@ include base_path('partials/layout-top.php');
             <tr>
                 <th>Courier</th>
                 <th>Tracking no.</th>
-                <th>Student</th>
+                <th>Recipient</th>
                 <th>Arrival</th>
                 <th>Deadline</th>
                 <th>Status</th>
@@ -81,8 +79,12 @@ include base_path('partials/layout-top.php');
                         <p class="muted">Ref: <?= e($parcel['parcel_code'] ?? '—'); ?></p>
                     </td>
                     <td>
-                        <strong><?= e($parcel['student_name'] ?? $parcel['recipient_name']); ?></strong>
-                        <p class="muted">ID: <?= e($parcel['student_code'] ?? '—'); ?></p>
+                        <strong><?= e($parcel['recipient_name']); ?></strong>
+                        <?php if ($parcel['collected_by_student_id']): ?>
+                            <p class="muted">Collected ID: <?= e($parcel['collected_by_student_id']); ?></p>
+                        <?php else: ?>
+                            <p class="muted">Awaiting collection</p>
+                        <?php endif; ?>
                     </td>
                     <td><?= format_datetime($parcel['arrival_at']); ?></td>
                     <td>

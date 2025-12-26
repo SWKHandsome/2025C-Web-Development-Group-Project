@@ -13,16 +13,8 @@ $collectErrors = [];
 $editErrors = [];
 $searchTerm = trim($_GET['q'] ?? '');
 
-$studentsStmt = $pdo->query('SELECT id, full_name, student_id FROM users WHERE role = "student" ORDER BY full_name');
-$students = $studentsStmt->fetchAll();
-
-$findPackageWithStudent = static function (PDO $pdo, int $id): array|false {
-    $lookup = $pdo->prepare(
-        'SELECT p.*, s.full_name AS student_name, s.student_id AS student_code
-         FROM packages p
-         LEFT JOIN users s ON s.id = p.student_id
-         WHERE p.id = :id'
-    );
+$findPackage = static function (PDO $pdo, int $id): array|false {
+    $lookup = $pdo->prepare('SELECT * FROM packages WHERE id = :id');
     $lookup->execute(['id' => $id]);
     return $lookup->fetch();
 };
@@ -45,7 +37,7 @@ $viewModalOpen = false;
 if (isset($_GET['collect'])) {
     $collectId = (int) $_GET['collect'];
     if ($collectId > 0) {
-        $collectPackage = $findPackageWithStudent($pdo, $collectId);
+        $collectPackage = $findPackage($pdo, $collectId);
     }
 
     if (!$collectPackage) {
@@ -59,7 +51,7 @@ if (isset($_GET['collect'])) {
 if (isset($_GET['view'])) {
     $viewId = (int) $_GET['view'];
     if ($viewId > 0) {
-        $viewPackage = $findPackageWithStudent($pdo, $viewId);
+        $viewPackage = $findPackage($pdo, $viewId);
     }
 
     if (!$viewPackage) {
@@ -85,7 +77,7 @@ if (is_post()) {
 
         if ($packageId > 0) {
             if (!$collectPackage || (int) $collectPackage['id'] !== $packageId) {
-                $collectPackage = $findPackageWithStudent($pdo, $packageId);
+                $collectPackage = $findPackage($pdo, $packageId);
             }
 
             if (!$collectPackage) {
@@ -126,13 +118,6 @@ if (is_post()) {
         }
 
         if (!$currentErrors) {
-            $studentId = (int) ($_POST['student_id'] ?? 0);
-            $studentLookup = $pdo->prepare('SELECT id FROM users WHERE id = :id AND role = "student"');
-            $studentLookup->execute(['id' => $studentId]);
-            if (!$studentLookup->fetch()) {
-                $currentErrors[] = 'Invalid student selected.';
-            }
-
             $courier = $_POST['courier'] ?? 'Other';
             $allowedCouriers = ['Lalamove', 'Lazada', 'Shopee', 'Pos Laju', 'Other'];
             if (!in_array($courier, $allowedCouriers, true)) {
@@ -150,7 +135,6 @@ if (is_post()) {
 
             if (!$currentErrors) {
                 $payload = [
-                    'student_id' => $studentId,
                     'recipient_name' => $recipientName,
                     'tracking_number' => $tracking,
                     'parcel_code' => trim($_POST['parcel_code'] ?? ''),
@@ -163,14 +147,14 @@ if (is_post()) {
 
                 if ($action === 'create') {
                     $payload['recorded_by'] = $admin['id'];
-                    $sql = 'INSERT INTO packages (student_id, recipient_name, tracking_number, parcel_code, courier, arrival_at, deadline_at, shelf_code, notes, recorded_by)
-                            VALUES (:student_id, :recipient_name, :tracking_number, :parcel_code, :courier, :arrival_at, :deadline_at, :shelf_code, :notes, :recorded_by)';
+                        $sql = 'INSERT INTO packages (recipient_name, tracking_number, parcel_code, courier, arrival_at, deadline_at, shelf_code, notes, recorded_by)
+                            VALUES (:recipient_name, :tracking_number, :parcel_code, :courier, :arrival_at, :deadline_at, :shelf_code, :notes, :recorded_by)';
                     $stmt = $pdo->prepare($sql);
                     $stmt->execute($payload);
                     flash('success', 'Package recorded successfully.');
                 } else {
                     $payload['id'] = (int) ($_POST['package_id'] ?? 0);
-                    $sql = 'UPDATE packages SET student_id = :student_id, recipient_name = :recipient_name, tracking_number = :tracking_number,
+                        $sql = 'UPDATE packages SET recipient_name = :recipient_name, tracking_number = :tracking_number,
                             parcel_code = :parcel_code, courier = :courier, arrival_at = :arrival_at, deadline_at = :deadline_at,
                             shelf_code = :shelf_code, notes = :notes WHERE id = :id';
                     $stmt = $pdo->prepare($sql);
@@ -184,17 +168,15 @@ if (is_post()) {
     }
 }
 
-$packageSql = 'SELECT p.*, s.full_name AS student_name, s.student_id AS student_code
-               FROM packages p
-               LEFT JOIN users s ON s.id = p.student_id';
+$packageSql = 'SELECT * FROM packages';
 $packageParams = [];
 
 if ($searchTerm !== '') {
-    $packageSql .= ' WHERE p.tracking_number LIKE :term OR p.recipient_name LIKE :term OR s.full_name LIKE :term';
+    $packageSql .= ' WHERE tracking_number LIKE :term OR recipient_name LIKE :term OR collected_by_name LIKE :term OR collected_by_student_id LIKE :term';
     $packageParams['term'] = '%' . $searchTerm . '%';
 }
 
-$packageSql .= ' ORDER BY p.created_at DESC';
+$packageSql .= ' ORDER BY created_at DESC';
 
 $packageStatement = $pdo->prepare($packageSql);
 $packageStatement->execute($packageParams);
@@ -212,7 +194,7 @@ $viewModalOpen = $viewModalOpen || isset($_GET['view']);
 if ($collectModalOpen && !$collectPackage) {
     $rehydrateId = (int) ($_POST['package_id'] ?? 0);
     if ($rehydrateId > 0) {
-        $collectPackage = $findPackageWithStudent($pdo, $rehydrateId) ?: null;
+        $collectPackage = $findPackage($pdo, $rehydrateId) ?: null;
     }
 }
 
@@ -245,7 +227,7 @@ include base_path('partials/layout-top.php');
             <tr>
                 <th>Courier</th>
                 <th>Tracking</th>
-                <th>Student</th>
+                <th>Recipient</th>
                 <th>Arrival</th>
                 <th>Deadline</th>
                 <th>Status</th>
@@ -273,8 +255,12 @@ include base_path('partials/layout-top.php');
                         <p class="muted">Ref: <?= e($parcel['parcel_code'] ?? '—'); ?></p>
                     </td>
                     <td>
-                        <strong><?= e($parcel['student_name'] ?? $parcel['recipient_name']); ?></strong>
-                        <p class="muted">ID: <?= e($parcel['student_code'] ?? '—'); ?></p>
+                        <strong><?= e($parcel['recipient_name']); ?></strong>
+                        <?php if ($parcel['collected_by_student_id']): ?>
+                            <p class="muted">Collected ID: <?= e($parcel['collected_by_student_id']); ?></p>
+                        <?php else: ?>
+                            <p class="muted">Awaiting collection</p>
+                        <?php endif; ?>
                     </td>
                     <td><?= format_datetime($parcel['arrival_at']); ?></td>
                     <td>
@@ -317,7 +303,8 @@ include base_path('partials/layout-top.php');
                     <h3>Add package</h3>
                     <p class="muted">Capture parcel arrivals and storage data.</p>
                 </div>
-                <a class="modal-close" href="<?= base_url('admin/packages.php'); ?>" aria-label="Close create">&times;</a>
+                <                USE `web-development`;
+                SOURCE "D:/XAMPP/htdocs/Web Development/2025C-Web-Development-Group-Project/database.sql";a class="modal-close" href="<?= base_url('admin/packages.php'); ?>" aria-label="Close create">&times;</a>
             </header>
             <form method="post" class="form-grid">
                 <input type="hidden" name="csrf_token" value="<?= csrf_token(); ?>">
@@ -331,16 +318,6 @@ include base_path('partials/layout-top.php');
                         </ul>
                     </div>
                 <?php endif; ?>
-                <label>Student
-                    <select name="student_id" required>
-                        <option value="">Select student</option>
-                        <?php foreach ($students as $student): ?>
-                            <option value="<?= $student['id']; ?>" <?= ((string) $oldCreateValue('student_id') === (string) $student['id']) ? 'selected' : ''; ?>>
-                                <?= e($student['full_name'] . ' (' . ($student['student_id'] ?? 'N/A') . ')'); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </label>
                 <label>Recipient name
                     <input type="text" name="recipient_name" required value="<?= e($oldCreateValue('recipient_name')); ?>">
                 </label>
@@ -408,16 +385,6 @@ include base_path('partials/layout-top.php');
                         </ul>
                     </div>
                 <?php endif; ?>
-                <label>Student
-                    <select name="student_id" required>
-                        <option value="">Select student</option>
-                        <?php foreach ($students as $student): ?>
-                            <option value="<?= $student['id']; ?>" <?= ((string) $oldEditValue('student_id') === (string) $student['id']) ? 'selected' : ''; ?>>
-                                <?= e($student['full_name'] . ' (' . ($student['student_id'] ?? 'N/A') . ')'); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </label>
                 <label>Recipient name
                     <input type="text" name="recipient_name" required value="<?= e($oldEditValue('recipient_name')); ?>">
                 </label>
@@ -477,8 +444,7 @@ include base_path('partials/layout-top.php');
                     </div>
                 <?php endif; ?>
                 <p class="muted">
-                    <?= e($collectPackage['student_name'] ?? 'Student'); ?>
-                    · ID <?= e($collectPackage['student_code'] ?? '—'); ?>
+                    Recipient: <?= e($collectPackage['recipient_name']); ?>
                 </p>
                 <label>Collector name
                     <input type="text" name="collector_name" placeholder="As per student card" value="<?= e($oldCollectValue('collector_name')); ?>">
@@ -504,8 +470,8 @@ include base_path('partials/layout-top.php');
             </header>
             <div class="lost-info">
                 <dl>
-                    <dt>Student</dt>
-                    <dd><?= e($viewPackage['student_name'] ?? $viewPackage['recipient_name']); ?> (ID: <?= e($viewPackage['student_code'] ?? '—'); ?>)</dd>
+                    <dt>Recipient</dt>
+                    <dd><?= e($viewPackage['recipient_name']); ?></dd>
                     <dt>Collector name</dt>
                     <dd><?= e($viewPackage['collected_by_name'] ?? 'Not recorded'); ?></dd>
                     <dt>Collector ID</dt>

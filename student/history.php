@@ -12,10 +12,16 @@ $student = current_user($pdo);
 $historyStatement = $pdo->prepare(
     'SELECT p.*, recorder.full_name AS recorder_name FROM packages p
      LEFT JOIN users recorder ON recorder.id = p.recorded_by
-     WHERE p.student_id = :student AND p.status = "collected"
+     WHERE p.status = "collected" AND (
+         p.collected_by_student_id = :studentCode
+         OR (p.collected_by_student_id IS NULL AND p.collected_by_name = :studentName)
+     )
      ORDER BY p.collected_at DESC'
 );
-$historyStatement->execute(['student' => $student['id']]);
+$historyStatement->execute([
+    'studentCode' => $student['student_id'] ?? '',
+    'studentName' => $student['full_name'],
+]);
 $history = $historyStatement->fetchAll();
 
 include base_path('partials/layout-top.php');

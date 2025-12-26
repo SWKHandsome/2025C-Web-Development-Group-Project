@@ -16,9 +16,7 @@ $stats = [
 ];
 
 $latestParcels = $pdo->query(
-    'SELECT p.*, s.full_name AS student_name FROM packages p
-     LEFT JOIN users s ON s.id = p.student_id
-     ORDER BY p.created_at DESC LIMIT 5'
+    'SELECT * FROM packages ORDER BY created_at DESC LIMIT 5'
 )->fetchAll();
 
 $latestLost = $pdo->query(
@@ -59,7 +57,7 @@ include base_path('partials/layout-top.php');
                 <tr>
                     <th>Courier</th>
                     <th>Tracking no.</th>
-                    <th>Student</th>
+                    <th>Recipient</th>
                     <th>Arrival</th>
                     <th>Status</th>
                 </tr>
@@ -82,7 +80,12 @@ include base_path('partials/layout-top.php');
                             <strong><?= e($parcel['tracking_number']); ?></strong>
                             <p class="muted">Ref: <?= e($parcel['parcel_code'] ?? '—'); ?></p>
                         </td>
-                        <td><?= e($parcel['student_name'] ?? 'Student'); ?></td>
+                        <td>
+                            <strong><?= e($parcel['recipient_name']); ?></strong>
+                            <?php if ($parcel['collected_by_student_id']): ?>
+                                <p class="muted">Collector ID: <?= e($parcel['collected_by_student_id']); ?></p>
+                            <?php endif; ?>
+                        </td>
                         <td><?= format_datetime($parcel['arrival_at']); ?></td>
                         <td><?= status_badge($parcel['status']); ?></td>
                     </tr>
