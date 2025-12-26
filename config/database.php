@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 $databaseConfig = [
-    'host' => getenv('DB_HOST') ?: 'localhost',
-    'port' => getenv('DB_PORT') ? (int) getenv('DB_PORT') : 3306,
-    'name' => getenv('DB_NAME') ?: 'web-development',
-    'user' => getenv('DB_USER') ?: 'root',
-    'pass' => getenv('DB_PASS') ?: '',
-    'charset' => getenv('DB_CHARSET') ?: 'utf8mb4',
+    'host' => 'localhost',
+    'port' => 3306,
+    'name' => 'web-development',
+    'user' => 'root',
+    'pass' => '',
+    'charset' => 'utf8mb4',
 ];
 
 $dsn = sprintf(
