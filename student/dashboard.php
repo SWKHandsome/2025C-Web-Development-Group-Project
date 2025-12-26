@@ -81,7 +81,7 @@ include base_path('partials/layout-top.php');
                     <td>
                         <strong><?= e($parcel['recipient_name']); ?></strong>
                         <?php if ($parcel['collected_by_student_id']): ?>
-                            <p class="muted">Collected ID: <?= e($parcel['collected_by_student_id']); ?></p>
+                            <p class="muted">ID: <?= e($parcel['collected_by_student_id']); ?></p>
                         <?php else: ?>
                             <p class="muted">Awaiting collection</p>
                         <?php endif; ?>
