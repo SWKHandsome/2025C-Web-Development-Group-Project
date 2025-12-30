@@ -303,8 +303,8 @@ include base_path('partials/layout-top.php');
                     <h3>Add package</h3>
                     <p class="muted">Capture parcel arrivals and storage data.</p>
                 </div>
-                <                USE `web-development`;
-                SOURCE "D:/XAMPP/htdocs/Web Development/2025C-Web-Development-Group-Project/database.sql";a class="modal-close" href="<?= base_url('admin/packages.php'); ?>" aria-label="Close create">&times;</a>
+                <!-- USE `web-development`; -->
+                <SOURCE "D:/XAMPP/htdocs/Web Development/2025C-Web-Development-Group-Project/database.sql";a class="modal-close" href="<?= base_url('admin/packages.php'); ?>" aria-label="Close create">&times;</a>
             </header>
             <form method="post" class="form-grid">
                 <input type="hidden" name="csrf_token" value="<?= csrf_token(); ?>">
