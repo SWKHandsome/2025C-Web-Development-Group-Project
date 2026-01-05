@@ -20,7 +20,7 @@ $latestParcels = $pdo->query(
 )->fetchAll();
 
 $latestLost = $pdo->query(
-    'SELECT * FROM lost_items ORDER BY created_at DESC LIMIT 4'
+    'SELECT * FROM lost_items ORDER BY created_at DESC LIMIT 3'
 )->fetchAll();
 
 include base_path('partials/layout-top.php');
